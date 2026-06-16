@@ -1,6 +1,7 @@
 {
   "name": "deploy-and-pray",
   "version": "0.1.0",
+  "description": "Next.js App Router with Drizzle CRUD stack",
   "private": true,
   "scripts": {
     "dev": "next dev --turbopack",
