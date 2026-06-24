@@ -13,6 +13,7 @@
     "docker:nas:cloudflare": "docker compose -f docker-compose.nas.yml --profile cloudflare up -d --build",
     "docker:nas:down": "docker compose -f docker-compose.nas.yml down",
     "docker:nas:logs": "docker compose -f docker-compose.nas.yml logs -f app",
+    "deploy:nas": "sh scripts/nas-deploy.sh",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
     "db:push": "drizzle-kit push",

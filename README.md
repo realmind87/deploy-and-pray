@@ -97,6 +97,7 @@ npm run dev
 | `npm run docker:nas:cloudflare` | NAS + Cloudflare Tunnel 시작 |
 | `npm run docker:nas:down` | NAS Docker 스택 종료 |
 | `npm run docker:nas:logs` | NAS 앱 로그 확인 |
+| `npm run deploy:nas` | NAS 프로덕션 배포 (NAS에서 실행) |
 | `npm run db:generate` | 마이그레이션 파일 생성 |
 | `npm run db:push` | 스키마 DB 반영 |
 | `npm run db:migrate` | 마이그레이션 실행 |
@@ -117,6 +118,56 @@ cp .env.nas.example .env
 
 docker compose -f docker-compose.nas.yml --profile cloudflare up -d --build
 ```
+
+### 업데이트 배포 (수동)
+
+NAS에서 한 번에 pull + rebuild:
+
+```bash
+cd /volume1/docker/heavyjungle
+chmod +x scripts/nas-deploy.sh
+./scripts/nas-deploy.sh
+```
+
+### 자동 배포 (GitHub Actions)
+
+`main` 브랜치에 push하면 NAS에 SSH로 배포합니다.
+
+**1. NAS SSH 준비**
+
+- DSM → 제어판 → 터미널 및 SNMP → SSH 활성화
+- 배포용 SSH 키 생성 (Mac):
+
+```bash
+ssh-keygen -t ed25519 -C "github-actions-heavyjungle" -f ~/.ssh/heavyjungle_nas_deploy
+```
+
+- 공개키를 NAS `~/.ssh/authorized_keys`에 등록
+- GitHub Actions가 NAS에 접속하려면 **SSH 포트가 외부에서 열려 있어야** 합니다 (공유기 포트포워딩 또는 Tailscale IP 사용)
+
+**2. NAS sudo (비밀번호 없이 docker 실행)**
+
+DSM 터미널에서 배포 계정에 docker sudo 허용 (계정명 변경):
+
+```bash
+echo 'YOUR_USER ALL=(ALL) NOPASSWD: /usr/local/bin/docker' | sudo tee /etc/sudoers.d/heavyjungle-deploy
+sudo chmod 440 /etc/sudoers.d/heavyjungle-deploy
+```
+
+**3. GitHub Secrets** — 저장소 → Settings → Secrets and variables → Actions
+
+| Secret | 예시 | 필수 |
+|--------|------|------|
+| `NAS_HOST` | `192.168.0.50` 또는 Tailscale IP | ✅ |
+| `NAS_USER` | DSM 사용자명 | ✅ |
+| `NAS_SSH_KEY` | `~/.ssh/heavyjungle_nas_deploy` **개인키** 전체 | ✅ |
+| `NAS_PORT` | `22` | 선택 |
+| `NAS_DEPLOY_PATH` | `/volume1/docker/heavyjungle` | 선택 |
+
+**4. 확인**
+
+- GitHub → Actions 탭에서 `Deploy to NAS` 워크플로 실행 여부 확인
+- 수동 실행: Actions → Deploy to NAS → Run workflow
 
 | URL | 설명 |
 |-----|------|
