@@ -1,4 +1,7 @@
-# Synology DS918+ + Cloudflare
+# Synology DS918+ + Cloudflare (heavyjungle.com)
+#
+# NAS 경로:
+#   cd /volume1/docker/heavyjungle
 #
 # 기본 실행:
 #   docker compose -f docker-compose.nas.yml up -d --build
@@ -11,7 +14,7 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-    container_name: deploy-and-pray-app
+    container_name: heavyjungle-app
     restart: unless-stopped
     ports:
       - "3000:3000"
@@ -34,7 +37,7 @@ services:
   cloudflared:
     profiles: ["cloudflare"]
     image: cloudflare/cloudflared:latest
-    container_name: deploy-and-pray-cloudflared
+    container_name: heavyjungle-cloudflared
     restart: unless-stopped
     command: tunnel --no-autoupdate run
     environment:
@@ -44,7 +47,7 @@ services:
 
   postgres:
     image: postgres:16-alpine
-    container_name: deploy-and-pray-postgres
+    container_name: heavyjungle-postgres
     restart: unless-stopped
     environment:
       POSTGRES_USER: postgres
@@ -61,7 +64,7 @@ services:
 
   redis:
     image: redis:7-alpine
-    container_name: deploy-and-pray-redis
+    container_name: heavyjungle-redis
     restart: unless-stopped
     command: redis-server --appendonly yes --maxmemory 128mb --maxmemory-policy allkeys-lru
     volumes:

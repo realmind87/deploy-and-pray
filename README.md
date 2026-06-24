@@ -91,12 +91,37 @@ npm run dev
 | `npm run build` | 프로덕션 빌드 |
 | `npm run start` | 프로덕션 서버 실행 |
 | `npm run lint` | ESLint 검사 |
-| `npm run docker:up` | Docker 컨테이너 시작 |
-| `npm run docker:down` | Docker 컨테이너 종료 |
+| `npm run docker:up` | 로컬 Docker (Postgres + Redis) 시작 |
+| `npm run docker:down` | 로컬 Docker 종료 |
+| `npm run docker:nas:up` | NAS Docker 스택 시작 |
+| `npm run docker:nas:cloudflare` | NAS + Cloudflare Tunnel 시작 |
+| `npm run docker:nas:down` | NAS Docker 스택 종료 |
+| `npm run docker:nas:logs` | NAS 앱 로그 확인 |
 | `npm run db:generate` | 마이그레이션 파일 생성 |
 | `npm run db:push` | 스키마 DB 반영 |
 | `npm run db:migrate` | 마이그레이션 실행 |
 | `npm run db:studio` | Drizzle Studio (DB GUI) |
+
+## Synology NAS 배포 (DS918+)
+
+Cloudflare Tunnel로 `https://deploy.heavyjungle.com` 에 서비스합니다.
+
+```bash
+mkdir -p /volume1/docker
+cd /volume1/docker
+git clone https://github.com/realmind87/deploy-and-pray.git heavyjungle
+cd /volume1/docker/heavyjungle
+
+cp .env.nas.example .env
+# POSTGRES_PASSWORD, CLOUDFLARE_TUNNEL_TOKEN 설정
+
+docker compose -f docker-compose.nas.yml --profile cloudflare up -d --build
+```
+
+| URL | 설명 |
+|-----|------|
+| https://deploy.heavyjungle.com | 프로덕션 (Cloudflare) |
+| http://NAS_IP:3000 | NAS 내부 테스트 |
 
 ## API
 
