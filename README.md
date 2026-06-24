@@ -119,19 +119,37 @@ cp .env.nas.example .env
 docker compose -f docker-compose.nas.yml --profile cloudflare up -d --build
 ```
 
-### 업데이트 배포 (수동)
+### 업데이트 배포 (수동, 기본)
 
-NAS에서 한 번에 pull + rebuild:
+**Mac (로컬)**
+
+```bash
+git add .
+git commit -m "your message"
+git push origin main
+```
+
+**NAS (SSH 또는 DSM 터미널)**
 
 ```bash
 cd /volume1/docker/heavyjungle
+git pull origin main
+sudo docker compose -f docker-compose.nas.yml --profile cloudflare up -d --build
+```
+
+또는 배포 스크립트 한 방:
+
+```bash
+cd /volume1/docker/heavyjungle
+git pull origin main
 chmod +x scripts/nas-deploy.sh
 ./scripts/nas-deploy.sh
 ```
 
-### 자동 배포 (GitHub Actions)
+### 자동 배포 (GitHub Actions, 나중에)
 
-`main` 브랜치에 push하면 NAS에 SSH로 배포합니다.
+포트포워딩 또는 Tailscale으로 NAS SSH가 외부에서 접근 가능해지면 사용합니다.  
+현재는 `workflow_dispatch`(수동 실행)만 활성화되어 있으며, `deploy-nas.yml`의 `push` 트리거 주석을 해제하면 push 시 자동 배포됩니다.
 
 **1. NAS SSH 준비**
 

@@ -1,8 +1,7 @@
 name: Deploy to NAS
 
 on:
-  push:
-    branches: [main]
+  # push 자동 배포는 NAS SSH 포트포워딩/Tailscale 준비 후 활성화
   workflow_dispatch:
 
 concurrency:
