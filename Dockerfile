@@ -10,6 +10,9 @@ WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 ENV NEXT_TELEMETRY_DISABLED=1
+# Build-time placeholders for Next.js static analysis (runtime values come from compose)
+ENV DATABASE_URL=postgresql://postgres:postgres@postgres:5432/heavyjungle
+ENV REDIS_URL=redis://redis:6379
 RUN npm run build
 
 FROM base AS runner
