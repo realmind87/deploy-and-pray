@@ -1,0 +1,77 @@
+# Synology DS918+ + Cloudflare
+#
+# 기본 실행:
+#   docker compose -f docker-compose.nas.yml up -d --build
+#
+# Cloudflare Tunnel 함께 실행 (권장):
+#   docker compose -f docker-compose.nas.yml --profile cloudflare up -d --build
+
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: deploy-and-pray-app
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      DATABASE_URL: postgresql://postgres:${POSTGRES_PASSWORD:-postgres}@postgres:5432/deploy_and_pray
+      REDIS_URL: redis://redis:6379
+      DB_POOL_MAX: "10"
+      DB_IDLE_TIMEOUT: "20"
+      DB_CONNECT_TIMEOUT: "10"
+      CACHE_TTL_SECONDS: "300"
+      NODE_OPTIONS: "--max-old-space-size=384"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  # Cloudflare Zero Trust Tunnel (포트포워딩 없이 외부 공개)
+  # .env에 CLOUDFLARE_TUNNEL_TOKEN 설정 후 --profile cloudflare 로 실행
+  cloudflared:
+    profiles: ["cloudflare"]
+    image: cloudflare/cloudflared:latest
+    container_name: deploy-and-pray-cloudflared
+    restart: unless-stopped
+    command: tunnel --no-autoupdate run
+    environment:
+      TUNNEL_TOKEN: ${CLOUDFLARE_TUNNEL_TOKEN}
+    depends_on:
+      - app
+
+  postgres:
+    image: postgres:16-alpine
+    container_name: deploy-and-pray-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+      POSTGRES_DB: deploy_and_pray
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./src/db/migrations/0000_loving_weapon_omega.sql:/docker-entrypoint-initdb.d/01-schema.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d deploy_and_pray"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    container_name: deploy-and-pray-redis
+    restart: unless-stopped
+    command: redis-server --appendonly yes --maxmemory 128mb --maxmemory-policy allkeys-lru
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  postgres_data:
+  redis_data:
