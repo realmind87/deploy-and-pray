@@ -13,6 +13,8 @@ JOURNAL_FILE="$ROOT/src/db/migrations/meta/_journal.json"
 
 # docker-entrypoint-initdb.d 로 0000(items)만 적용된 레거시 볼륨용
 MIGRATION_0000_HASH="7b4d58f8fb7ee3f7ffeafb4a16e06244e02291a20698d39710fc7e9f3c6d8897"
+# drizzle-kit 은 hash 가 아니라 journal 의 when(created_at) 으로 적용 여부를 판단함
+MIGRATION_0000_WHEN="1781580197740"
 
 if [ -f .env ]; then
   set -a
@@ -68,11 +70,15 @@ CREATE TABLE IF NOT EXISTS drizzle.__drizzle_migrations (
   created_at bigint
 );
 INSERT INTO drizzle.__drizzle_migrations (hash, created_at)
-SELECT '${MIGRATION_0000_HASH}', (extract(epoch from now()) * 1000)::bigint
+SELECT '${MIGRATION_0000_HASH}', ${MIGRATION_0000_WHEN}::bigint
 WHERE to_regclass('public.items') IS NOT NULL
   AND NOT EXISTS (
     SELECT 1 FROM drizzle.__drizzle_migrations WHERE hash = '${MIGRATION_0000_HASH}'
   );
+UPDATE drizzle.__drizzle_migrations
+SET created_at = ${MIGRATION_0000_WHEN}::bigint
+WHERE hash = '${MIGRATION_0000_HASH}'
+  AND created_at <> ${MIGRATION_0000_WHEN}::bigint;
 EOSQL
 }
 

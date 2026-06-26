@@ -10,6 +10,7 @@ cd "$ROOT"
 
 COMPOSE_FILE="${NAS_COMPOSE_FILE:-docker-compose.nas.yml}"
 MIGRATION_0000_HASH="7b4d58f8fb7ee3f7ffeafb4a16e06244e02291a20698d39710fc7e9f3c6d8897"
+MIGRATION_0000_WHEN="1781580197740"
 
 if [ -f .env ]; then
   set -a
@@ -40,6 +41,15 @@ DROP TABLE IF EXISTS "users" CASCADE;
 DROP TYPE IF EXISTS "public"."membership_role";
 DELETE FROM drizzle.__drizzle_migrations
 WHERE hash <> '${MIGRATION_0000_HASH}';
+UPDATE drizzle.__drizzle_migrations
+SET created_at = ${MIGRATION_0000_WHEN}::bigint
+WHERE hash = '${MIGRATION_0000_HASH}';
+INSERT INTO drizzle.__drizzle_migrations (hash, created_at)
+SELECT '${MIGRATION_0000_HASH}', ${MIGRATION_0000_WHEN}::bigint
+WHERE to_regclass('public.items') IS NOT NULL
+  AND NOT EXISTS (
+    SELECT 1 FROM drizzle.__drizzle_migrations WHERE hash = '${MIGRATION_0000_HASH}'
+  );
 EOSQL
 
 if sudo docker exec -e PGPASSWORD="$POSTGRES_PASSWORD" heavyjungle-postgres \
