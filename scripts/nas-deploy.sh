@@ -20,6 +20,9 @@ git pull origin "$BRANCH"
 echo "==> docker compose up --build"
 sudo docker compose -f "$COMPOSE_FILE" --profile "$COMPOSE_PROFILE" up -d --build
 
+echo "==> DB migrations"
+sh "$ROOT/scripts/nas-migrate.sh"
+
 echo "==> Waiting for app..."
 i=1
 while [ "$i" -le 30 ]; do

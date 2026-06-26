@@ -42,6 +42,21 @@ services:
       minio:
         condition: service_healthy
 
+  # DB 마이그레이션 (1회성) — ./scripts/nas-migrate.sh
+  migrate:
+    profiles: ["migrate"]
+    image: node:20-alpine
+    working_dir: /app
+    volumes:
+      - .:/app
+    environment:
+      DATABASE_URL: postgresql://postgres:${POSTGRES_PASSWORD:-postgres}@postgres:5432/heavyjungle
+    depends_on:
+      postgres:
+        condition: service_healthy
+    command: sh -c "npm ci && npm run db:migrate"
+    restart: "no"
+
   # Cloudflare Zero Trust Tunnel (포트포워딩 없이 외부 공개)
   # .env에 CLOUDFLARE_TUNNEL_TOKEN 설정 후 --profile cloudflare 로 실행
   cloudflared:

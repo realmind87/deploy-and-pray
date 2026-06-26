@@ -14,6 +14,8 @@
     "docker:nas:down": "docker compose -f docker-compose.nas.yml down",
     "docker:nas:logs": "docker compose -f docker-compose.nas.yml logs -f app",
     "deploy:nas": "sh scripts/nas-deploy.sh",
+    "migrate:nas": "sh scripts/nas-migrate.sh",
+    "doctor:nas": "sh scripts/nas-doctor.sh",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
     "db:push": "drizzle-kit push",
