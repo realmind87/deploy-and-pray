@@ -1,7 +1,6 @@
 "use client";
 
 import { useActionState, useEffect } from "react";
-import { postMetaIconOnlyChipClass } from "@/components/posts/post-meta-chip";
 import { toast } from "@/components/ui/toast";
 import { deletePost, type PostActionState } from "@/features/posts/actions";
 

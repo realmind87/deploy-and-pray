@@ -1,6 +1,7 @@
 "use client";
 
 import { useActionState, useEffect, useId } from "react";
+import { AuthRecoveryLinks } from "@/components/auth/auth-recovery-links";
 import { signIn, type AuthActionState } from "@/features/auth/actions";
 
 type LoginModalProps = {
@@ -93,6 +94,8 @@ export function LoginModal({ isOpen, onClose, onSwitchToSignUp, next }: LoginMod
           </div>
 
           {state.error && <p className="mt-4 text-sm text-red-600 dark:text-red-400">{state.error}</p>}
+
+          <AuthRecoveryLinks className="mt-3" onNavigate={onClose} />
 
           <button
             type="submit"

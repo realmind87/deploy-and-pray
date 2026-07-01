@@ -95,3 +95,8 @@ export async function deleteOtherSessions(userId: string, currentToken: string):
     .delete(sessions)
     .where(and(eq(sessions.userId, userId), ne(sessions.tokenHash, currentTokenHash)));
 }
+
+/** 비밀번호 재설정 등 — 해당 사용자의 모든 세션 무효화 */
+export async function deleteAllUserSessions(userId: string): Promise<void> {
+  await db.delete(sessions).where(eq(sessions.userId, userId));
+}

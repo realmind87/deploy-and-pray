@@ -1,6 +1,8 @@
 import Link from "next/link";
 import { formatRelativeTime } from "@/lib/time";
 import type { PostListItem } from "@/features/posts/queries";
+import { ProfileAvatar } from "@/features/profile/components/ProfileAvatar";
+import { resolveAvatarPublicUrl } from "@/lib/storage-url";
 
 type PostCardProps = {
   post: PostListItem;
@@ -10,9 +12,16 @@ type PostCardProps = {
 export function PostCard({ post }: PostCardProps) {
   return (
     <article className="border-b border-zinc-200 py-4 dark:border-zinc-800">
-      <div className="min-w-0 pl-2 pr-2">
-        <span className="text-xs text-zinc-500 dark:text-zinc-400">{post.author.username}</span>
-        
+      <div className="min-w-0 px-2">
+        <div className="mb-2 flex items-center gap-1.5">
+          <ProfileAvatar
+            name={post.author.username}
+            avatarUrl={resolveAvatarPublicUrl(post.author.avatarUrl)}
+            size="xs"
+          />
+          <span className="text-xs text-zinc-500 dark:text-zinc-400">{post.author.username}</span>
+        </div>
+
         <div className="flex justify-between gap-1">
           <Link
             href={`/posts/${post.id}`}
@@ -20,7 +29,7 @@ export function PostCard({ post }: PostCardProps) {
           >
             {post.title}
           </Link>
-          <span className="font-medium text-zinc-700 dark:text-zinc-300">{post.commentCount}</span>
+
         </div>
 
         <p className="mt-2 text-xs text-zinc-500 dark:text-zinc-400">
@@ -29,6 +38,8 @@ export function PostCard({ post }: PostCardProps) {
           <span>조회 {post.viewCount}</span>
           <span className="mx-1">·</span>
           <span>좋아요 {post.likeCount}</span>
+          <span className="mx-1">·</span>
+          <span>댓글 {post.commentCount}</span>
         </p>
       </div>
     </article>

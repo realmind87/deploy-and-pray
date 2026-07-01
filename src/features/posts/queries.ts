@@ -20,6 +20,7 @@ export type PostListItem = {
   author: {
     id: string;
     username: string;
+    avatarUrl: string | null;
   };
 };
 
@@ -37,6 +38,7 @@ async function fetchPostRows(
       createdAt: posts.createdAt,
       authorId: users.id,
       authorUsername: users.username,
+      authorAvatarUrl: users.avatarUrl,
     })
     .from(posts)
     .innerJoin(users, eq(posts.authorId, users.id))
@@ -55,7 +57,11 @@ function mapPostListItem(
     likeCount: row.likeCount,
     commentCount: row.commentCount,
     createdAt: row.createdAt,
-    author: { id: row.authorId, username: row.authorUsername },
+    author: {
+      id: row.authorId,
+      username: row.authorUsername,
+      avatarUrl: row.authorAvatarUrl,
+    },
   };
 }
 
@@ -73,11 +79,12 @@ export async function listRecentPosts(
 ): Promise<CursorPage<PostListItem>> {
   const { cursor: rawCursor, limit } = postListQuerySchema.parse(options);
   const cursor = decodeCursor(rawCursor);
+  const cursorFilter = buildCursorFilter(cursor);
+  const whereClause = cursorFilter
+    ? and(eq(posts.isDeleted, false), cursorFilter)
+    : eq(posts.isDeleted, false);
 
-  const rows = await fetchPostRows(
-    and(eq(posts.isDeleted, false), buildCursorFilter(cursor)),
-    limit,
-  );
+  const rows = await fetchPostRows(whereClause, limit);
 
   return buildCursorPage(rows.map(mapPostListItem), limit);
 }

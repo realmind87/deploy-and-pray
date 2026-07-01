@@ -50,6 +50,13 @@
       "when": 1782431219312,
       "tag": "0007_naive_iron_monger",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1782899823978,
+      "tag": "0008_dashing_lyja",
+      "breakpoints": true
     }
   ]
 }

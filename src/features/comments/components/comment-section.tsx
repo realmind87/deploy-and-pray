@@ -11,7 +11,6 @@ import { resolveAvatarPublicUrl } from "@/lib/storage-url";
 
 type CommentSectionProps = {
   postId: string;
-  commentCount: number;
   user: User | null;
 };
 
@@ -41,7 +40,7 @@ function serializeTree(nodes: CommentNode[], user: User | null): SerializableCom
   }));
 }
 
-export async function CommentSection({ postId, commentCount, user }: CommentSectionProps) {
+export async function CommentSection({ postId, user }: CommentSectionProps) {
   const tree = await getCommentTreeByPost(postId);
   const serialized = serializeTree(tree, user);
 
@@ -57,7 +56,10 @@ export async function CommentSection({ postId, commentCount, user }: CommentSect
 
       <div>
         {serialized.length === 0 ? (
-          <p className={mutedTextClass}>아직 댓글이 없습니다.</p>
+          <div className="mt-10">
+            <p className={`text-center text-xl font-bold text-black dark:text-white`}>첫 번째 댓글을 남겨 보세요</p>
+            <p className={`mt-4 text-center`}>게시물에 아직 댓글이 달리지 않았습니다.</p>
+          </div>
         ) : (
           serialized.map((thread) => (
             <CommentThread key={thread.id} thread={thread} postId={postId} isLoggedIn={!!user} />

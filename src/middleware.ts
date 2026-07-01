@@ -3,10 +3,14 @@ import type { NextRequest } from "next/server";
 import { SESSION_COOKIE_NAME, isSessionTokenFormatValid } from "@/lib/auth/session-token";
 
 const PROTECTED_PATHS = ["/settings", "/write"];
-const AUTH_PATHS = ["/login", "/signup"];
+const AUTH_REDIRECT_PATHS = ["/login", "/signup", "/login/find-username", "/login/forgot-password"];
 
 function matchesPath(pathname: string, paths: string[]): boolean {
   return paths.some((path) => pathname === path || pathname.startsWith(`${path}/`));
+}
+
+function shouldRedirectAuthenticatedUser(pathname: string): boolean {
+  return AUTH_REDIRECT_PATHS.includes(pathname);
 }
 
 export function middleware(request: NextRequest) {
@@ -27,7 +31,7 @@ export function middleware(request: NextRequest) {
     return NextResponse.redirect(loginUrl);
   }
 
-  if (matchesPath(pathname, AUTH_PATHS) && hasValidCookie) {
+  if (shouldRedirectAuthenticatedUser(pathname) && hasValidCookie) {
     const next = request.nextUrl.searchParams.get("next");
     const dest = next?.startsWith("/") && !next.startsWith("//") ? next : "/";
     return NextResponse.redirect(new URL(dest, request.url));
@@ -37,5 +41,13 @@ export function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/settings/:path*", "/write", "/login", "/signup", "/posts/:id/edit"],
+  matcher: [
+    "/settings/:path*",
+    "/write",
+    "/login",
+    "/login/find-username",
+    "/login/forgot-password",
+    "/signup",
+    "/posts/:id/edit",
+  ],
 };

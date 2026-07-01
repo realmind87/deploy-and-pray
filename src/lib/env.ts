@@ -23,6 +23,11 @@ const envSchema = z.object({
     .enum(["true", "false"])
     .default("true")
     .transform((value) => value === "true"),
+  /** 비밀번호 재설정 링크 등 절대 URL 생성용 */
+  APP_URL: z.string().url().default("http://localhost:3000"),
+  /** Resend API — 없으면 development에서 콘솔로 출력 */
+  RESEND_API_KEY: z.string().min(1).optional(),
+  EMAIL_FROM: z.string().min(1).optional(),
 });
 
 export type Env = z.infer<typeof envSchema>;

@@ -9,8 +9,6 @@ import { displayCommentContent } from "@/features/comments/display";
 import { formatRelativeTime } from "@/lib/time";
 import { ProfileAvatar } from "@/features/profile/components/ProfileAvatar";
 
-const MAX_VISUAL_DEPTH = 8;
-
 export type SerializableComment = {
   id: string;
   postId: string;

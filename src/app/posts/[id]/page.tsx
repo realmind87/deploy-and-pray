@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { SiteHeader } from "@/components/layout/site-header";
-import { PostMetaChip, postMetaIconOnlyChipClass } from "@/components/posts/post-meta-chip";
+import { PostMetaChip } from "@/components/posts/post-meta-chip";
 import { CommentSection } from "@/features/comments/components/comment-section";
 import { LikeButton } from "@/features/likes/components/like-button";
 import { getUserLikeForPost } from "@/features/likes/queries";
@@ -51,19 +51,23 @@ export default async function PostDetailPage({ params }: PageProps) {
   return (
     <div className="min-h-screen">
       <SiteHeader />
-      <main className="mx-auto max-w-3xl px-4 py-8">
+      <main className="mx-auto max-w-4xl px-4 py-8">
         <Link href="/" className={linkMutedClass}>
           ← 목록으로
         </Link>
 
         <article className="mt-6">
-          <div className="mt-2 flex items-center gap-2 text-xs text-zinc-500 dark:text-zinc-400">
+          <div className="mt-2 flex items-center gap-1 text-xs text-zinc-500 dark:text-zinc-400">
             <ProfileAvatar
               name={post.author.displayName ?? post.author.username}
               avatarUrl={resolveAvatarPublicUrl(post.author.avatarUrl)}
               size="xs"
             />
             <span>{post.author.username}</span>
+            <span>·</span>
+            <div className="text-xs text-zinc-500 dark:text-zinc-400">
+              <time dateTime={post.createdAt.toISOString()}>{formatRelativeTime(post.createdAt)}</time>
+            </div>
 
             {canEdit && (
               <div className="flex items-center  gap-3 ml-auto">
@@ -78,10 +82,8 @@ export default async function PostDetailPage({ params }: PageProps) {
             )}
           </div>
 
-          <h1 className={`mt-1 ${pageTitleClass}`}>{post.title}</h1>
-          <div className="text-xs text-zinc-500 dark:text-zinc-400">
-            <time dateTime={post.createdAt.toISOString()}>{formatRelativeTime(post.createdAt)}</time>
-          </div>
+          <h1 className={`mt-3 ${pageTitleClass}`}>{post.title}</h1>
+
           <PostContent content={post.content} />
         </article>
 
@@ -100,7 +102,7 @@ export default async function PostDetailPage({ params }: PageProps) {
           </PostMetaChip>
         </div>
 
-        <CommentSection postId={postId} commentCount={post.commentCount} user={user} />
+        <CommentSection postId={postId} user={user} />
       </main>
     </div>
   );

@@ -1,15 +1,59 @@
-# Deploy and Pray
+# 배포는기도다 (heavyjungle)
 
-Next.js App Router 기반의 풀스택 웹 애플리케이션입니다. Server Component를 기본으로 하며, 대용량 데이터 처리와 CRUD 작업에 최적화된 개발 스택을 사용합니다.
+Next.js App Router 기반 커뮤니티 웹 애플리케이션입니다. Server Component를 기본으로 하며, 자체 세션 인증·게시글·댓글·프로필·NAS Docker 배포까지 포함합니다.
 
-## 주요 기능
+**프로덕션:** [https://heavyjungle.com](https://heavyjungle.com) (Synology NAS + Docker + Cloudflare Tunnel)
 
-- **Server Components** — 서버에서 데이터 fetch 및 렌더링
-- **CRUD API** — REST 엔드포인트 + Server Actions
-- **커서 페이지네이션** — 대량 데이터 목록 조회에 적합
-- **배치 처리** — 트랜잭션 기반 bulk insert (최대 500건)
-- **Redis 캐시** — 조회 성능 향상, CUD 시 캐시 무효화
-- **타입 안전성** — TypeScript + Zod 스키마 검증
+## 구현된 기능
+
+### 인증 · 계정
+
+- 회원가입 / 로그인 / 로그아웃 (Server Actions + httpOnly 세션 쿠키)
+- 헤더 로그인·회원가입 모달, `?next=` 리다이렉트 지원
+- **아이디 찾기** — 가입 이메일로 아이디 안내 메일 발송 (`/login/find-username`)
+- **비밀번호 찾기** — 이메일 재설정 링크 발송, 1시간 유효 토큰 (`/login/forgot-password` → `/reset-password`)
+- 프로필 비밀번호·이메일 변경 (`/u/[username]/settings/...`)
+- 관리자 권한 (`ADMIN_USERNAMES` 환경 변수)
+
+### 게시글
+
+- 글 작성 / 수정 / 삭제 (soft delete)
+- 리치 텍스트 에디터 (HTML sanitize)
+- 홈 최신글 목록 + 커서 페이지네이션
+- 글 상세 — 조회수, 좋아요, 댓글 수
+- 작성자 아바타·아이디 메타 표시
+
+### 댓글
+
+- 댓글 작성 / 삭제 (soft delete)
+- 1단계 대댓글 (중첩 스레드)
+- 리치 텍스트 댓글 (이미지·링크)
+- 에러 토스트 피드백
+
+### 좋아요 · 조회수
+
+- 글 좋아요 토글 (`useOptimistic`)
+- 조회수 증가 API (`PostViewCount`)
+
+### 프로필
+
+- 공개 프로필 페이지 (`/u/[username]`)
+- 표시 이름·소개·아바타 수정
+- MinIO(S3 호환) 아바타 업로드
+- 내가 쓴 글 목록
+
+### UI · UX
+
+- 라이트 / 다크 모드 (프로필 메뉴 토글)
+- 공통 UI 클래스 (`src/lib/ui-classes.ts`)
+- 반응형 헤더 (모바일 메뉴, 글쓰기 버튼)
+
+### 인프라 · 개발 DX
+
+- Docker Compose — PostgreSQL, Redis, MinIO
+- Drizzle ORM 마이그레이션
+- `npm run dev` 시 로컬 DB 자동 기동 (`scripts/ensure-local-db.sh`)
+- NAS 배포 스크립트 (`scripts/nas-deploy.sh`)
 
 ## 기술 스택
 
@@ -20,34 +64,47 @@ Next.js App Router 기반의 풀스택 웹 애플리케이션입니다. Server C
 | ORM | Drizzle ORM |
 | Database | PostgreSQL 16 |
 | Cache | Redis 7 |
-| Validation | Zod |
+| Storage | MinIO (S3 호환) |
+| Auth | Argon2id, 자체 세션 (DB + httpOnly 쿠키) |
+| Validation | Zod v4 |
 | Client State | TanStack Query |
-| Infra | Docker Compose |
+| Email | Resend API (선택, dev는 콘솔 출력) |
+| Infra | Docker Compose, Cloudflare Tunnel |
 
 ## 프로젝트 구조
 
 ```
 src/
-├── app/                  # App Router 페이지 및 API
-│   ├── api/              # REST API (/items, /health)
-│   ├── items/            # CRUD 데모 페이지
-│   └── page.tsx          # 홈 (Server Component)
-├── actions/              # Server Actions
-├── components/           # React 컴포넌트
-├── db/                   # Drizzle 스키마, 마이그레이션, DB 연결
-├── hooks/                # React Query 훅
-├── lib/                  # 캐시, 페이지네이션, Zod 검증
-└── repositories/         # 데이터 접근 레이어 (CRUD, 배치)
+├── app/                      # App Router 페이지·API
+│   ├── api/                  # REST (/health, /items, /posts/...)
+│   ├── login/                # 로그인, 아이디/비밀번호 찾기
+│   ├── posts/[id]/           # 글 상세·수정
+│   ├── write/                # 글 작성
+│   ├── u/[username]/         # 프로필·설정
+│   └── page.tsx              # 홈 (최신글)
+├── components/               # 공통 UI (header, auth 모달 등)
+├── features/                 # 도메인별 actions, queries, components
+│   ├── auth/
+│   ├── posts/
+│   ├── comments/
+│   ├── likes/
+│   └── profile/
+├── server/                   # DB, auth, email
+│   ├── db/schema/
+│   ├── auth/
+│   └── email/
+├── lib/                      # env, validators, cursor, storage-url
+└── db/migrations/            # SQL 마이그레이션
 ```
 
 ## 사전 요구사항
 
 - Node.js 18+
-- Docker Desktop (PostgreSQL, Redis 사용 시)
+- Docker Desktop (로컬 DB·Redis·MinIO)
 
-## 시작하기
+## 로컬 개발
 
-### 1. 저장소 클론 및 의존성 설치
+### 1. 클론 및 설치
 
 ```bash
 git clone https://github.com/realmind87/heavyjungle.git
@@ -55,73 +112,89 @@ cd heavyjungle
 npm install
 ```
 
-### 2. 환경 변수 설정
+### 2. 환경 변수
 
 ```bash
 cp .env.example .env
 ```
 
-### 3. DB 및 Redis 실행 (CRUD 기능 사용 시)
-
-```bash
-npm run docker:up   # Postgres + Redis 컨테이너 시작
-npm run db:push     # 스키마 DB 반영
-```
-
-### 4. 개발 서버 실행
+### 3. 개발 서버 실행
 
 ```bash
 npm run dev
 ```
 
+`predev` 훅이 Docker(Postgres/Redis/MinIO) 상태를 확인하고, 꺼져 있으면 자동으로 올립니다.
+
 | URL | 설명 |
 |-----|------|
-| http://localhost:3000 | 홈 |
+| http://localhost:3000 | 홈 (최신글) |
+| http://localhost:3000/write | 글 작성 (로그인 필요) |
+| http://localhost:3000/login | 로그인 |
 | http://localhost:3000/items | CRUD 데모 |
-| http://localhost:3000/api/health | DB/Redis 헬스체크 |
+| http://localhost:9001 | MinIO 콘솔 (minioadmin / minioadmin) |
 
-> 홈(`/`)만 확인할 경우 Docker 없이 `npm run dev`만 실행해도 됩니다.  
-> CRUD(`/items`)는 PostgreSQL과 Redis가 필요합니다.
+수동으로 DB만 올릴 때:
+
+```bash
+npm run docker:up
+npm run db:migrate
+```
+
+## 주요 라우트
+
+| 경로 | 설명 |
+|------|------|
+| `/` | 최신글 목록 |
+| `/write` | 글 작성 |
+| `/posts/[id]` | 글 상세 |
+| `/posts/[id]/edit` | 글 수정 |
+| `/login` | 로그인 |
+| `/login/find-username` | 아이디 찾기 |
+| `/login/forgot-password` | 비밀번호 찾기 |
+| `/reset-password?token=` | 비밀번호 재설정 |
+| `/signup` | 회원가입 |
+| `/u/[username]` | 프로필 |
+| `/u/[username]/edit` | 프로필 수정 |
+| `/settings` | 설정 (리다이렉트) |
 
 ## npm 스크립트
 
 | 명령어 | 설명 |
 |--------|------|
-| `npm run dev` | 개발 서버 (Turbopack) |
+| `npm run dev` | 개발 서버 (DB 자동 확인 포함) |
 | `npm run build` | 프로덕션 빌드 |
-| `npm run start` | 프로덕션 서버 실행 |
-| `npm run lint` | ESLint 검사 |
-| `npm run docker:up` | 로컬 Docker (Postgres + Redis) 시작 |
+| `npm run start` | 프로덕션 서버 |
+| `npm run lint` | ESLint |
+| `npm run docker:up` | 로컬 Docker 시작 |
 | `npm run docker:down` | 로컬 Docker 종료 |
-| `npm run docker:nas:up` | NAS Docker 스택 시작 |
-| `npm run docker:nas:cloudflare` | NAS + Cloudflare Tunnel 시작 |
-| `npm run docker:nas:down` | NAS Docker 스택 종료 |
-| `npm run docker:nas:logs` | NAS 앱 로그 확인 |
-| `npm run deploy:nas` | NAS 프로덕션 배포 (NAS에서 실행) |
+| `npm run db:migrate` | 마이그레이션 적용 |
 | `npm run db:generate` | 마이그레이션 파일 생성 |
-| `npm run db:push` | 스키마 DB 반영 |
-| `npm run db:migrate` | 마이그레이션 실행 |
-| `npm run db:studio` | Drizzle Studio (DB GUI) |
+| `npm run db:studio` | Drizzle Studio |
+| `npm run deploy:nas` | NAS 배포 스크립트 |
+| `npm run docker:nas:cloudflare` | NAS + Cloudflare Tunnel |
 
-## Synology NAS 배포 (DS918+)
+## Synology NAS 배포
 
 Cloudflare Tunnel로 `https://heavyjungle.com` 에 서비스합니다.
+
+### 최초 설정
 
 ```bash
 mkdir -p /volume1/docker
 cd /volume1/docker
 git clone https://github.com/realmind87/heavyjungle.git
-cd /volume1/docker/heavyjungle
+cd heavyjungle
 
 cp .env.nas.example .env
-# POSTGRES_PASSWORD, CLOUDFLARE_TUNNEL_TOKEN 설정
+# POSTGRES_PASSWORD, CLOUDFLARE_TUNNEL_TOKEN, APP_URL, RESEND_API_KEY 등 설정
 
 docker compose -f docker-compose.nas.yml --profile cloudflare up -d --build
 ```
 
-### 업데이트 배포 (수동, 기본)
+### 업데이트 배포
 
-**Mac (로컬)**
+**Mac (코드 푸시)**
 
 ```bash
 git add .
@@ -129,15 +202,7 @@ git commit -m "your message"
 git push origin main
 ```
 
-**NAS (SSH 또는 DSM 터미널)**
-
-```bash
-cd /volume1/docker/heavyjungle
-git pull origin main
-sudo docker compose -f docker-compose.nas.yml --profile cloudflare up -d --build
-```
-
-또는 배포 스크립트 한 방:
+**NAS (SSH / DSM 터미널)**
 
 ```bash
 cd /volume1/docker/heavyjungle
@@ -146,97 +211,81 @@ chmod +x scripts/nas-deploy.sh
 ./scripts/nas-deploy.sh
 ```
 
-### 자동 배포 (GitHub Actions, 나중에)
-
-포트포워딩 또는 Tailscale으로 NAS SSH가 외부에서 접근 가능해지면 사용합니다.  
-현재는 `workflow_dispatch`(수동 실행)만 활성화되어 있으며, `deploy-nas.yml`의 `push` 트리거 주석을 해제하면 push 시 자동 배포됩니다.
-
-**1. NAS SSH 준비**
-
-- DSM → 제어판 → 터미널 및 SNMP → SSH 활성화
-- 배포용 SSH 키 생성 (Mac):
+또는 수동:
 
 ```bash
-ssh-keygen -t ed25519 -C "github-actions-heavyjungle" -f ~/.ssh/heavyjungle_nas_deploy
+cd /volume1/docker/heavyjungle
+git pull origin main
+sudo docker compose -f docker-compose.nas.yml --profile cloudflare up -d --build
+npm run db:migrate   # 새 마이그레이션 있을 때
 ```
-
-- 공개키를 NAS `~/.ssh/authorized_keys`에 등록
-- GitHub Actions가 NAS에 접속하려면 **SSH 포트가 외부에서 열려 있어야** 합니다 (공유기 포트포워딩 또는 Tailscale IP 사용)
-
-**2. NAS sudo (비밀번호 없이 docker 실행)**
-
-DSM 터미널에서 배포 계정에 docker sudo 허용 (계정명 변경):
-
-```bash
-echo 'YOUR_USER ALL=(ALL) NOPASSWD: /usr/local/bin/docker' | sudo tee /etc/sudoers.d/heavyjungle-deploy
-sudo chmod 440 /etc/sudoers.d/heavyjungle-deploy
-```
-
-**3. GitHub Secrets** — 저장소 → Settings → Secrets and variables → Actions
-
-| Secret | 예시 | 필수 |
-|--------|------|------|
-| `NAS_HOST` | `192.168.0.50` 또는 Tailscale IP | ✅ |
-| `NAS_USER` | DSM 사용자명 | ✅ |
-| `NAS_SSH_KEY` | `~/.ssh/heavyjungle_nas_deploy` **개인키** 전체 | ✅ |
-| `NAS_PORT` | `22` | 선택 |
-| `NAS_DEPLOY_PATH` | `/volume1/docker/heavyjungle` | 선택 |
-
-**4. 확인**
-
-- GitHub → Actions 탭에서 `Deploy to NAS` 워크플로 실행 여부 확인
-- 수동 실행: Actions → Deploy to NAS → Run workflow
-
-| URL | 설명 |
-|-----|------|
-| https://heavyjungle.com | 프로덕션 (Cloudflare) |
-| http://NAS_IP:3000 | NAS 내부 테스트 |
-
-## API
-
-### Items
-
-| Method | Endpoint | 설명 |
-|--------|----------|------|
-| `GET` | `/api/items?cursor=&limit=` | 목록 조회 (커서 페이지네이션) |
-| `POST` | `/api/items` | 단건 생성 |
-| `GET` | `/api/items/:id` | 단건 조회 |
-| `PATCH` | `/api/items/:id` | 수정 |
-| `DELETE` | `/api/items/:id` | 삭제 |
-
-### Health
-
-| Method | Endpoint | 설명 |
-|--------|----------|------|
-| `GET` | `/api/health` | PostgreSQL, Redis 연결 상태 |
-
-## 아키텍처
-
-```
-Client (React Query)
-    ↓ fetch
-API Routes / Server Actions
-    ↓
-Repository Layer  ←→  Redis Cache
-    ↓
-Drizzle ORM → PostgreSQL
-```
-
-- **Repository 패턴** — 비즈니스 로직과 DB 접근 분리
-- **커서 페이지네이션** — `id` 기반으로 offset 방식 대비 대용량 목록에 유리
-- **커넥션 풀** — `DB_POOL_MAX` 등 환경 변수로 튜닝 가능
-- **Server Actions** — 폼 기반 mutation 및 `revalidatePath` 지원
 
 ## 환경 변수
 
 `.env.example` 참고:
 
-| 변수 | 설명 | 기본값 |
-|------|------|--------|
-| `DATABASE_URL` | PostgreSQL 연결 URL | `postgresql://postgres:postgres@localhost:5432/heavyjungle` |
-| `REDIS_URL` | Redis 연결 URL | `redis://localhost:6379` |
-| `DB_POOL_MAX` | DB 커넥션 풀 최대 크기 | `20` |
-| `CACHE_TTL_SECONDS` | 캐시 TTL (초) | `300` |
+| 변수 | 설명 |
+|------|------|
+| `DATABASE_URL` | PostgreSQL 연결 URL |
+| `REDIS_URL` | Redis 연결 URL |
+| `S3_*` | MinIO / S3 스토리지 (아바타 등) |
+| `APP_URL` | 비밀번호 재설정 링크용 앱 URL |
+| `RESEND_API_KEY` | 이메일 발송 (Resend) |
+| `EMAIL_FROM` | 발신 주소 |
+| `ADMIN_USERNAMES` | 관리자 아이디 (쉼표 구분) |
+
+개발 환경에서 `RESEND_API_KEY`가 없으면 아이디/비밀번호 찾기 메일 내용이 **터미널 콘솔**에 출력됩니다.
+
+## API
+
+### Posts
+
+| Method | Endpoint | 설명 |
+|--------|----------|------|
+| `GET` | `/api/posts` | 글 목록 |
+| `POST` | `/api/posts/[id]/like` | 좋아요 토글 |
+| `POST` | `/api/posts/[id]/view` | 조회수 증가 |
+
+### Items (데모)
+
+| Method | Endpoint | 설명 |
+|--------|----------|------|
+| `GET` | `/api/items?cursor=&limit=` | 목록 (커서 페이지네이션) |
+| `POST` | `/api/items` | 생성 |
+| `GET/PATCH/DELETE` | `/api/items/:id` | 조회·수정·삭제 |
+
+### Health
+
+| Method | Endpoint | 설명 |
+|--------|----------|------|
+| `GET` | `/api/health` | PostgreSQL, Redis 상태 |
+
+## 아키텍처
+
+```
+Browser
+  ↓
+App Router (RSC + Client Components)
+  ↓
+Server Actions / API Routes
+  ↓
+features/* (queries, actions)
+  ↓
+Drizzle ORM → PostgreSQL
+Redis (캐시, 예정)
+MinIO (파일)
+```
+
+- **세션** — 32바이트 토큰 → SHA-256 해시 DB 저장, httpOnly 쿠키
+- **커서 페이지네이션** — `createdAt` + `id` 복합 커서
+- **캐시 카운터** — `view_count`, `like_count`, `comment_count` 컬럼으로 목록 N+1 방지
+
+## 향후 예정
+
+- 게시판(board) 재도입
+- 댓글 좋아요, 신고, 알림
+- Redis 세션 미러·레이트 리미팅
+- GitHub Actions 자동 NAS 배포
 
 ## 라이선스
 

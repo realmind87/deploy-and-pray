@@ -84,6 +84,7 @@ export async function getUserPosts(
       createdAt: posts.createdAt,
       authorId: users.id,
       authorUsername: users.username,
+      authorAvatarUrl: users.avatarUrl,
     })
     .from(posts)
     .innerJoin(users, eq(posts.authorId, users.id))
@@ -104,7 +105,11 @@ export async function getUserPosts(
     likeCount: row.likeCount,
     commentCount: row.commentCount,
     createdAt: row.createdAt,
-    author: { id: row.authorId, username: row.authorUsername },
+    author: {
+      id: row.authorId,
+      username: row.authorUsername,
+      avatarUrl: row.authorAvatarUrl,
+    },
   }));
 
   return buildCursorPage(items, limit);
